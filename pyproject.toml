@@ -7,7 +7,8 @@ readme = "README.md"
 packages = [{include = "shazam_python"}]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9,<3.13"
+scipy = "^1.11.2"
 
 
 [build-system]
