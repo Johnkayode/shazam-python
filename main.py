@@ -106,15 +106,18 @@ def find_matches(hashes: list, database) -> list:
 
 
 def main():
-    database = pickle.load(open('database.pickle', 'rb'))
-    song_index_lookup = pickle.load(open("song_index.pickle", "rb"))
-   
-    Fs, audio = read("data/recordings/recording1.wav")
-    constellation_map  = create_constellation(audio, Fs)
-    hashes = create_hashes(constellation_map, 0)
-    matches = find_matches(hashes, database)
-    for song_index, score in matches:
-        print(f"{song_index_lookup[song_index]} : (Score of {score[1]} at {score[0]})")
+    try:
+        database = pickle.load(open('database.pickle', 'rb'))
+        song_index_lookup = pickle.load(open("song_index.pickle", "rb"))
+    
+        Fs, audio = read("data/recordings/recording1.wav")
+        constellation_map  = create_constellation(audio, Fs)
+        hashes = create_hashes(constellation_map, 0)
+        matches = find_matches(hashes, database)
+        for song_index, score in matches:
+            print(f"{song_index_lookup[song_index]} : (Score of {score[1]} at {score[0]})")
+    except Exception as e:
+        print("Error occured: ", e)
     
 
 if __name__ == "__main__":
