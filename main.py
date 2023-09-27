@@ -2,6 +2,13 @@ import numpy as np
 from scipy import fft, signal
 from scipy.io.wavfile import read
 
+import numpy as np
+import pickle
+from scipy import fft, signal
+from scipy.io.wavfile import read
+
+
+
 def create_constellation(audio, Fs) -> list:
     # Parameters
     window_length_seconds = 0.5
@@ -11,11 +18,14 @@ def create_constellation(audio, Fs) -> list:
 
     amount_to_pad = window_length_samples - audio.size % window_length_samples
     song_input = np.pad(audio, (0, amount_to_pad))
+    
+  
 
     # Perform a short time fourier transform
     frequencies, times, stft = signal.stft(
         song_input, Fs, nperseg=window_length_samples, nfft=window_length_samples, return_onesided=True
     )
+   
     constellation_map = []
     for time_idx, window in enumerate(stft.T):
         # Spectrum is by default complex. 
@@ -62,12 +72,50 @@ def create_hashes(constellation_map: list, song_id: str) -> dict:
             hashes[hash] = (time, song_id)
     return hashes
 
-def find_matches(hashes: list) -> list:
-    pass
+def find_matches(hashes: list, database) -> list:
+    matches_per_song = {}
+    for hash, (sample_time, _) in hashes.items():
+        if hash in database:
+            matching_occurences = database[hash]
+            for source_time, song_index in matching_occurences:
+                if song_index not in matches_per_song:
+                    matches_per_song[song_index] = []
+                matches_per_song[song_index].append((hash, sample_time, source_time))
+            
+    scores = {}
+    for song_index, matches in matches_per_song.items():
+        song_scores_by_offset = {}
+        for hash, sample_time, source_time in matches:
+            delta = source_time - sample_time
+            if delta not in song_scores_by_offset:
+                song_scores_by_offset[delta] = 0
+            song_scores_by_offset[delta] += 1
+
+        max = (0, 0)
+        for offset, score in song_scores_by_offset.items():
+            if score > max[1]:
+                max = (offset, score)
+        
+        scores[song_index] = max
+
+    # Sort the scores for the user
+    scores = list(sorted(scores.items(), key=lambda x: x[1][1], reverse=True)) 
+    
+    return scores
 
 
 
 def main():
-    Fs, audio = read("data/sample1.wav")
+    database = pickle.load(open('database.pickle', 'rb'))
+    song_index_lookup = pickle.load(open("song_index.pickle", "rb"))
+   
+    Fs, audio = read("data/recordings/recording1.wav")
     constellation_map  = create_constellation(audio, Fs)
     hashes = create_hashes(constellation_map, 0)
+    matches = find_matches(hashes, database)
+    for song_index, score in matches:
+        print(f"{song_index_lookup[song_index]} : (Score of {score[1]} at {score[0]})")
+    
+
+if __name__ == "__main__":
+    main()

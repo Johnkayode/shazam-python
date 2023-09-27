@@ -1,2 +1,4 @@
 .dist/
 .venv/
+data/samples/*.wav
+data/recordings/*.wav
